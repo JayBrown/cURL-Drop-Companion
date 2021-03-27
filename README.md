@@ -50,6 +50,9 @@ CDC is meant as an ad-hoc sharing solution, i.e. to only launch the service if y
 * Leave the curldrop server running until the shared files have been downloaded
 * Stop the server (and if necessary close the redirect ports on your router/AP) by launching CDC without input and choosing "Clear Server" from the startup options
 * a verbose log file is written to `/tmp/local.lcars.cURLDropCompanion.log`
+
+## To-do
+* support for a `.persist` dotfile in the curldrop sharing directory: CDC would then keep the server running
  
 ## Uninstall
 * delete the main application and the user-defined curldrop sharing folder
