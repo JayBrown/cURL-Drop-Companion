@@ -6,7 +6,7 @@
 # shellcheck disable=SC2162
 
 # cURL Drop Companion (cdc)
-# v1.0
+# v1.0.1
 # macOS
 #
 # Copyright (c) 2021 Joss Brown (pseud.)
@@ -34,7 +34,7 @@ process="cdc"
 uiprocess="cURL Drop Companion"
 procid="local.lcars.cURLDropCompanion"
 skid="D1CC1414E11480527EECC3D3C944F8BFB1931574"
-version="1.0"
+version="1.0.1"
 logloc="/tmp/$procid.log"
 histloc="/var/tmp/$procid.hist" # use system's persistent temp location for history file
 
@@ -267,7 +267,7 @@ fi
 # notify function
 _notify () {
 	"$tn_loc/Contents/MacOS/cURL Drop Companion Notifier" \
-		-title "$process [$account]" \
+		-title "$uiprocess [$account]" \
 		-subtitle "$1" \
 		-message "$2" \
 		-appIcon "$icon_loc" \

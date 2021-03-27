@@ -1,25 +1,25 @@
 # cURL Drop Companion
 
-**macOS companion application (Platypus) for curldrop to share files on your Mac with other users in the local network or over the internet via direct download links.**
+**macOS companion application (Platypus with z-shell script) for `curldrop` to share files on your Mac with other users in the local network or over the internet via direct download links.**
 
-Why? Because AirDrop only works between Macs, and not everyone has installed wormhole.
+Why? Because **AirDrop** only works between Macs, and not everyone has installed `wormhole`.
 
-*Note:* the current release is at v1.0, but it has not been tested thoroughly, and only on macOS 11.2 (Big Sur).
+*Note:* the current release is at v1.0.1, but it has not been tested thoroughly, and only on macOS 11.2 (Big Sur).
 
 ## Requisites
-* `curldrop` — https://github.com/kennell/curldrop (install with python3 using pip3)
-* `detox` — http://detox.sourceforge.net/ (install e.g. with Homebrew)
-* `imagemagick` — https://www.imagemagick.org/ (install e.g. with Homebrew)
-* `miniupnpc` — https://miniupnp.tuxfamily.org/ (install e.g. with Homebrew)
-* `python3` (install e.g. with Xcode or Homebrew etc.)
-* `qrencode` — https://fukuchi.org/works/qrencode/index.html.en (install e.g. with Homebrew)
+* **[`curldrop`](https://github.com/kennell/curldrop)** (install with `python3` using `pip3`)
+* **[`detox`](http://detox.sourceforge.net/)** (install e.g. with [Homebrew](https://brew.sh))
+* **[`imagemagick`](https://www.imagemagick.org/)** (install e.g. with Homebrew)
+* **[`miniupnpc`](https://miniupnp.tuxfamily.org/)** (install e.g. with Homebrew)
+* **`python3`** (install e.g. with **Xcode**, the **Apple Command Line Tools**, or Homebrew etc.)
+* **[`qrencode`](https://fukuchi.org/works/qrencode/index.html.en)** (install e.g. with Homebrew)
 
 ## Optional dependencies
-* `sendEmail` — https://github.com/mogaal/sendemail (install e.g. with Homebrew)
-* `terminal-share` — https://github.com/mattt/terminal-share (install with gem)
+* **[`sendEmail`](https://github.com/mogaal/sendemail)** (install e.g. with Homebrew)
+* **[`terminal-share`](https://github.com/mattt/terminal-share)** (install with `ruby` using `gem`)
 
 ## Install
-* Download the DMG of the latest release
+* Download the DMG of the **[latest release](https://github.com/JayBrown/cURL-Drop-Companion/releases/latest)**
 * dequarantine
 * copy app into any of your applications folders
 * double-click the workflow to install the Finder Quick Action 
