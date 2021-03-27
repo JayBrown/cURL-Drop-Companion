@@ -1,6 +1,6 @@
 # cURL Drop Companion
 
-**macOS companion application (Platypus) for curldrop to share files on your Mac with other users in the local network or over the internet via direct download links. **
+**macOS companion application (Platypus) for curldrop to share files on your Mac with other users in the local network or over the internet via direct download links.**
 
 Why? Because AirDrop only works between Macs, and not everyone has installed wormhole.
 
@@ -8,7 +8,7 @@ Why? Because AirDrop only works between Macs, and not everyone has installed wor
 
 ## Requisites
 * `curldrop` — https://github.com/kennell/curldrop (install with python3 using pip3)
-* `detox` — http —//detox.sourceforge.net/ (install e.g. with Homebrew)
+* `detox` — http://detox.sourceforge.net/ (install e.g. with Homebrew)
 * `imagemagick` — https://www.imagemagick.org/ (install e.g. with Homebrew)
 * `miniupnpc` — https://miniupnp.tuxfamily.org/ (install e.g. with Homebrew)
 * `python3` (install e.g. with Xcode or Homebrew etc.)
