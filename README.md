@@ -4,6 +4,8 @@
 
 Why? Because **AirDrop** only works between Macs, and not everyone has installed `wormhole`.
 
+CDC is meant as an ad-hoc sharing solution, i.e. to only launch the service if you quickly want to share files with someone. If you are looking for a permanent solution to keep a sharing server running, you should persist `curldrop` by default at log-in, e.g. with a macOS LaunchAgent.
+
 *Note:* the current release is at v1.0.1, but it has not been tested thoroughly, and only on macOS 11.2 (Big Sur).
 
 ## Requisites
