@@ -6,7 +6,7 @@
 # shellcheck disable=SC2162
 
 # cURL Drop Companion (cdc)
-# v1.0.1
+# v1.0.3
 # macOS
 #
 # Copyright (c) 2021 Joss Brown (pseud.)
@@ -33,10 +33,8 @@ export SYSTEM_VERSION_COMPAT=0
 process="cdc"
 uiprocess="cURL Drop Companion"
 procid="local.lcars.cURLDropCompanion"
-skid="D1CC1414E11480527EECC3D3C944F8BFB1931574"
-version="1.0.1"
+version="1.0.3"
 logloc="/tmp/$procid.log"
-histloc="/var/tmp/$procid.hist" # use system's persistent temp location for history file
 
 # logging
 currentdate=$(date)
@@ -105,9 +103,7 @@ if ! [[ $HOMEDIR ]] || ! [[ -d "$HOMEDIR" ]] ; then
 				echo "ERROR[01]: $uiprocess ($process) could not detect a proper home directory for the currently logged-in user! Exiting..."
 				_sysbeep &
 				osascript &>/dev/null << EOT
-tell application "cURL Drop Companion"
-	display alert "Internal error [01]: missing home directory" message "$uiprocess ($process) could not detect a proper home directory for the currently logged-in user." as informational buttons {"Quit"} default button "Quit" giving up after 180
-end tell
+display alert "Internal error [01]: missing home directory" message "$uiprocess ($process) could not detect a proper home directory for the currently logged-in user." as critical buttons {"Quit"} default button "Quit" giving up after 180
 EOT
 				printf "QUITAPP\n"
 				exit
@@ -117,6 +113,11 @@ EOT
 fi
 euser=$(id -un)
 account=$(id -u)
+
+# cache directory
+cachedir="$HOMEDIR/Library/Caches"
+! [[ -d "$cachedir" ]] && mkdir "$cachedir"
+histloc="$cachedir/$procid.hist"
 
 # extended path
 export PATH=$PATH:"$HOMEDIR"/.local/bin:"$HOMEDIR"/bin:"$HOMEDIR"/local/bin
@@ -130,9 +131,7 @@ icon_loc="$resources/cdc.png"
 contents=$(dirname "$resources") # Contents
 helpers="$contents/Helpers" # Helpers (in Contents)
 tn_loc="$helpers/cURL Drop Companion Notifier.app"
-exeloc="$contents/MacOS/cURL Drop Companion"
 approot=$(dirname "$contents") # path to cURL Drop Companion.app
-appname=$(basename "$approot") # cURL Drop Companion.app
 
 # Platypus command to quit GUI app
 _quit-app () {
@@ -185,6 +184,14 @@ EOR
 	_quit-direct
 }
 
+_syseventwarning () {
+	_sysbeep &
+	osascript &>/dev/null << EOE
+display alert "$1" message "$2" as critical buttons {"Quit"} default button "Quit" giving up after 180
+EOE
+	_quit-direct
+}
+
 # check macOS version
 prodv=$(sw_vers -productVersion)
 prodv_major=$(echo "$prodv" | awk -F. '{print $1}')
@@ -195,51 +202,38 @@ if [[ $prodv_major == 10 ]] && [[ $prodv_minor -ge 16 ]] ; then
 fi
 
 # check runtime/GUI/bundle context
-if [[ $resbase != "Resources" ]] ; then
-	echo "ERROR[02]: $uiprocess ($process) is not running from its regular location! Exiting..."
-	_sysbeep &
-	_syswarning \
-		"Internal error [02]: not nested in a Resources directory" \
-		"$uiprocess ($process) is not running from its regular location and will exit."
-else
-	unsupported=false
-	if [[ $prodv_major -eq 10 ]] && [[ $prodv_minor -le 10 ]] ; then # macOS 10.10 or earlier
-		if [[ $prodv_minor -lt 10 ]] ; then # macOS 10.9 or earlier
-			unsupported=true
-		else # macOS 10.10
-			prodv_fix=$(echo "$prodv" | awk -F. '{print $3}')
-			[[ $prodv_fix -lt 5 ]] && unsupported=true # macOS 10.10.4 or earlier
-		fi
-	fi
-	if $unsupported	; then
-		echo "ERROR[03]: $uiprocess ($process) needs at least OS X 10.10.5 (Yosemite)! Exiting..."
-		_syswarning \
-			"Internal error [03]: unsupported OS" \
-			"$uiprocess ($process) needs at least OS X 10.10.5 (Yosemite) for Notification Center support."
-	fi
-fi
 if [[ $euser == "root" ]] ; then
 	if [[ $accountname != "root" ]] ; then
-		echo "ERROR[04]: please do not execute $uiprocess ($process) as root! Exiting..."
-		_syswarning "Internal error [04]: code execution" "Please do not execute $uiprocess ($process) as root!" "root"
+		echo "ERROR[02]: please do not execute $uiprocess ($process) as root! Exiting..."
+		_syswarning "Internal error [02]: code execution" "Please do not execute $uiprocess ($process) as root!" "root"
 	fi
 fi
-echo "Execution path: $mypath_short"
-if echo "$mypath" | grep -q "/AppTranslocation/" &>/dev/null ; then
-	echo "ERROR[05]: application $uiprocess ($process) has been translocated"
-	_syswarning "Internal error [05]: AppTranslocation" "Please quit $uiprocess ($process), dequarantine the app, and try again!"
+if [[ $resbase != "Resources" ]] ; then
+	echo "ERROR[03]: $uiprocess ($process) is not running from its regular location! Exiting..."
+	_sysbeep &
+	_syseventwarning \
+		"Internal error [03]: not nested in a Resources directory" \
+		"$uiprocess ($process) is not running from its regular location and will exit."
 fi
-if [[ $appname != "cURL Drop Companion.app" ]] || ! [[ -f "$exeloc" ]] || ! [[ -f "$icon_loc" ]] || ! [[ -d "$tn_loc" ]] ; then
-	echo "ERROR[06]: $uiprocess ($process) is running from a modified bundle! Exiting..."
-		_syswarning \
-			"Internal error [06]: bundle" \
-			"$uiprocess ($process) is running from a modified bundle and will exit."
+unsupported=false
+if [[ $prodv_major -eq 10 ]] && [[ $prodv_minor -le 10 ]] ; then # macOS 10.10 or earlier
+	if [[ $prodv_minor -lt 10 ]] ; then # macOS 10.9 or earlier
+		unsupported=true
+	else # macOS 10.10
+		prodv_fix=$(echo "$prodv" | awk -F. '{print $3}')
+		[[ $prodv_fix -lt 5 ]] && unsupported=true # macOS 10.10.4 or earlier
+	fi
 fi
-
+if $unsupported	; then
+	echo "ERROR[04]: $uiprocess ($process) needs at least OS X 10.10.5 (Yosemite)! Exiting..."
+	_syseventwarning \
+		"Internal error [04]: unsupported OS" \
+		"$uiprocess ($process) needs at least OS X 10.10.5 (Yosemite) for Notification Center support."
+fi
 if ! codesign --verify --deep --verbose=1 "$approot" 2>&1 | grep -q "valid on disk$" &>/dev/null ; then
-	echo "ERROR[07]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
-		_syswarning \
-			"Internal error [07]: bundle signature" \
+	echo "ERROR[05]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
+		_syseventwarning \
+			"Internal error [05]: bundle signature" \
 			"$uiprocess ($process) is running from a modified bundle and will exit. Please re-install the app!"
 fi
 crtsdir="/tmp/cdc_crts"
@@ -248,19 +242,25 @@ mkdir "$crtsdir" 2>/dev/null
 WORKDIR="$PWD"
 cd "$crtsdir" || return
 codesign -dv --extract-certificates "$approot" &>/dev/null
+skid="D1CC1414E11480527EECC3D3C944F8BFB1931574"
 cskid=$(openssl x509 -in "$crtsdir/codesign0" -inform DER -noout -text -fingerprint 2>/dev/null | grep -A1 "Subject Key Identifier" | tail -1 | xargs | sed 's/://g')
 cd "$WORKDIR" || return
 rm -rf "$crtsdir" 2>/dev/null
 if [[ $cskid != "$skid" ]] ; then
-	echo "ERROR[08]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
-		_syswarning \
-			"Internal error [08]: bundle signature" \
+	echo "ERROR[06]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
+		_syseventwarning \
+			"Internal error [06]: bundle signature" \
 			"$uiprocess ($process) is running from a modified bundle and will exit. Please re-install the app!"
 fi
-if ! ps aux | grep "cURL Drop Companion.app/Contents/MacOS/cURL Drop Companion" | grep -v "grep" &>/dev/null ; then
-	echo "ERROR[09]: $uiprocess ($process) is not running as a GUI process! Exiting..."
-	_syswarning \
-		"Internal error [09]: runtime" \
+echo "Execution path: $mypath_short"
+if echo "$mypath" | grep -q "/AppTranslocation/" &>/dev/null ; then
+	echo "ERROR[07]: application $uiprocess ($process) has been translocated"
+	_syswarning "Internal error [07]: AppTranslocation" "Please quit $uiprocess ($process), dequarantine the app, and try again!"
+fi
+if ! ps aux | grep "\.app/Contents/MacOS/cURL Drop Companion" | grep -v "grep" &>/dev/null ; then
+	echo "ERROR[08]: $uiprocess ($process) is not running as a GUI process! Exiting..."
+	_syseventwarning \
+		"Internal error [08]: runtime" \
 		"$uiprocess ($process) is not running as a GUI process and will exit."
 fi
 
@@ -298,19 +298,14 @@ do
 done < <(echo "$requisites")
 if $reqerror ; then
 	missinglist=$(echo -e "$missinglist" | grep -v "^$")
-	echo "ERROR[10]: $uiprocess ($process) is missing requisites. Exiting..."
+	echo "ERROR[09]: $uiprocess ($process) is missing requisites. Exiting..."
 	_sysbeep &
 	osascript << EOW
 tell application "cURL Drop Companion"
-	display alert "Internal error [11]: requisites missing" as warning message "Please install the following requisites first:" & return & return & "$missinglist" buttons {"Quit"} default button "Quit" giving up after 180
+	display alert "Internal error [09]: requisites missing" as warning message "Please install the following requisites first:" & return & return & "$missinglist" buttons {"Quit"} default button "Quit" giving up after 180
 end tell
 EOW
 	_quit-direct
-	
-	
-	_syswarning \
-		"" \
-		""
 fi
 
 # search for optional dependency: sendEmail
@@ -417,12 +412,15 @@ EOM
 	# select curldrop sharing directory
 	selectsharedir=$(defaults read "$procid" curldropDirectory 2>/dev/null)
 	if ! [[ $selectsharedir ]] ; then
-		if [[ -d "$SHOME/Sites" ]] ; then
+		fallbackdir="$HOMEDIR/Sites/curldrop"
+		if [[ -d "$HOMEDIR/Sites" ]] ; then
 			selectsharedir="$HOMEDIR/Sites"
 		else
 			selectsharedir="$HOMEDIR"
 		fi
-		defaults write "$procid" curldropDirectory "$selectsharedir" 2>/dev/null
+		defaults write "$procid" curldropDirectory "$fallbackdir" 2>/dev/null
+	else
+		fallbackdir="$selectsharedir"
 	fi
 	cdsdir=$(osascript 2>/dev/null << EOS
 tell application "System Events"
@@ -435,11 +433,34 @@ end tell
 EOS
 	)
 	if ! [[ $cdsdir ]] || [[ $cdsdir == "false" ]] ; then
-		cdsdir="$HOMEDIR/Sites/curldrop"
+		cdsdir="$fallbackdir"
 	fi
 	! [[ -d $cdsdir ]] && mkdir -p "$cdsdir" 2>/dev/null
-	if [[ $cdsdir != "$selectsharedir" ]] ; then
+	if [[ $cdsdir != "$fallbackdir" ]] ; then
 		defaults write "$procid" curldropDirectory "$cdsdir" 2>/dev/null
+	fi
+	
+	# server persistence
+	persistchoice=$(osascript 2>/dev/null << EOH
+tell application "System Events"
+	activate
+	set theLogoPath to POSIX file "$icon_loc"
+	set thePersistence to button returned of (display dialog "Do you want to keep the cURL Drop server enabled continuously after initial demand? This is not recommended for remote sharing." ¬
+		buttons {"No", "Local & Remote", "Local Only"} ¬
+		default button 1 ¬
+		cancel button "No" ¬
+		with title "$uiprocess" ¬
+		with icon file theLogoPath ¬
+		giving up after 180)
+end tell
+EOH
+	)
+	if [[ $persistchoice == "Local Only" ]] ; then
+		defaults write "$procid" persistServer "local" 2>/dev/null
+	elif [[ $persistchoice == "Local & Remote" ]] ; then
+		defaults write "$procid" persistServer "remote" 2>/dev/null
+	else
+		defaults write "$procid" persistServer "false" 2>/dev/null
 	fi
 	
 	# dynamic DNS domain (optional)
@@ -1002,6 +1023,22 @@ else # main process
 	fi
 	! [[ -d "$sharedir" ]] && mkdir -p "$sharedir"
 	echo "curldrop directory: $sharedir"
+	persist=false
+	remotepersist=false
+	persistence=$(/usr/libexec/PlistBuddy -c "Print:persistServer" "$prefsloc" 2>/dev/null)
+	if [[ $persistence =~ ^(local|remote)$ ]] ; then
+		persist=true
+		echo "Server persistence: $persistence"
+		[[ $persistence == "remote" ]] && remotepersist=true
+	else
+		echo "Server persistence: [disabled]"
+	fi
+	if [[ -e "$sharedir/.persist" ]] ; then
+		persist=true
+		remotepersist=true
+		persistence="remote"
+		echo "NOTE: manual persist setting detected (.persist file)"
+	fi
 	ddns_domain=$(/usr/libexec/PlistBuddy -c "Print:dynamicDNSDomain" "$prefsloc" 2>/dev/null)
 	if ! [[ $ddns_domain ]] ; then
 		echo "DynDNS: [not configured]"
@@ -1030,59 +1067,91 @@ $init && _quit-direct
 # function: stop the curldrop server daemon
 _cdc-stop () {
 	errors=false
+	if $persist && ! [[ -e "$sharedir/.persist" ]] ; then
+		shutdownchoice=$(osascript 2>/dev/null << EOC
+tell application "System Events"
+	activate
+	set theLogoPath to POSIX file "$icon_loc"
+	set theShutdownChoice to button returned of (display dialog "The cURL Drop server is currently persistent. Do you want to keep this setting, for example if you want to share more files, or stop the server now?" ¬
+		buttons {"Stop", "Keep"} ¬
+		default button 2 ¬
+		with title "$uiprocess" ¬
+		with icon file theLogoPath ¬
+		giving up after 180)
+end tell
+EOC
+		)
+		if [[ $shutdownchoice == "Stop" ]] ; then
+			persist=false
+			remotepersist=false
+			defaults write "$procid" persistServer "false" 2>/dev/null
+		fi
+	fi
 	# check for remote port file first
 	if [[ -f "$sharedir/remote" ]] ; then # exists: previous operation was a remote share
 		echo "Remote port file detected"
 		# disable port forwarding in AP/router
 		closeport=$(cat "$sharedir/remote" 2>/dev/null | xargs)
-		if [[ $closeport ]] ; then
-			echo "Closing port: $closeport"
-			if upnpc -d "$closeport" tcp ; then
-				echo "Success: port closed"
-				rm -f "$sharedir/remote"
-				_notify "☑️ Port $closeport closed"
+		if ! $remotepersist ; then
+			if [[ $closeport ]] ; then
+				echo "Closing port: $closeport"
+				if upnpc -d "$closeport" tcp ; then
+					echo "Success: port closed"
+					rm -f "$sharedir/remote"
+					_notify "☑️ Port $closeport closed"
+				else
+					errors=true
+					echo "ERROR: could not close remote port"
+					_notify "⚠️ Error: remote port" "Could not close port"
+				fi
 			else
 				errors=true
-				echo "ERROR: could not close remote port"
-				_notify "⚠️ Error: remote port" "Could not close port"
+				echo "WARNING: no remote port in file"
+				_notify "⚠️ Warning: remote port" "No port detected from previous session"
 			fi
 		else
-			errors=true
-			echo "WARNING: no remote port in file"
-			_notify "⚠️ Warning: remote port" "No port detected from previous session"
+			if [[ $closeport ]] ; then
+				echo "NOTE: leaving remote sharing port $closeport open due to persistence setting"
+			else
+				echo "NOTE: leaving remote sharing port open due to persistence setting"
+			fi
 		fi
 	else # does not exist: previous operation was a local share
 		echo "NOTE: no remote port file detected"
 	fi
 	# look for PIDs of curldrop workers
-	pidlist=$(ps aux | grep "/Python.app/Contents/MacOS/Python " | grep "/curldrop " | awk '{print $2}' | sort -nr)
-	processes=false
-	if ! [[ $pidlist ]] ; then
-		echo "NOTE: no worker processes detected"
-		_notify "ℹ️ No worker processes detected"
-	else # workers found: quit or (fallback) kill
-		processes=true
-		workerror=false
-		while read -r pid
-		do
-			if ! kill -n 3 "$pid" 2>/dev/null ; then
-				if ! kill -n 9 "$pid" 2>/dev/null ; then
-					workerror=true
-					echo "Error killing worker PID $pid"
-					_notify "⚠️ Error killing process" "PID: $pid"
-					continue
+	if ! $persist ; then
+		pidlist=$(ps aux | grep "/Python.app/Contents/MacOS/Python " | grep "/curldrop " | awk '{print $2}' | sort -nr)
+		processes=false
+		if ! [[ $pidlist ]] ; then
+			echo "NOTE: no worker processes detected"
+			_notify "ℹ️ No worker processes detected"
+		else # workers found: quit or (fallback) kill
+			processes=true
+			workerror=false
+			while read -r pid
+			do
+				if ! kill -n 3 "$pid" 2>/dev/null ; then
+					if ! kill -n 9 "$pid" 2>/dev/null ; then
+						workerror=true
+						echo "Error killing worker PID $pid"
+						_notify "⚠️ Error killing process" "PID: $pid"
+						continue
+					else
+						echo "Successfully killed worker PID $pid (signal: 9)"	
+					fi
 				else
-					echo "Successfully killed worker PID $pid (signal: 9)"	
+					echo "Successfully killed worker PID $pid (signal: 3)"	
 				fi
+			done < <(echo "$pidlist")
+			if $workerror ; then
+				errors=true
 			else
-				echo "Successfully killed worker PID $pid (signal: 3)"	
+				_notify "☑️ cURL Drop server stopped"
 			fi
-		done < <(echo "$pidlist")
-		if $workerror ; then
-			errors=true
-		else
-			_notify "☑️ cURL Drop server stopped"
 		fi
+	else
+		echo "NOTE: leaving curldrop server alone due to persistence setting"
 	fi
 	# delete the share files proper and their info files
 	if ! [[ -f $histloc ]] ; then # no history file (manual deletion?)
@@ -1092,7 +1161,7 @@ _cdc-stop () {
 			_notify "ℹ️ No history file detected"
 		fi
 	else # parse history for file names
-		histevents=$(sort -nr -k1 "$histloc" 2>/dev/null)
+		histevents=$(sort -nr -k1 "$histloc" 2>/dev/null | grep -v "^$")
 		if ! [[ $histevents ]] ; then
 			echo "NOTE: history file is empty"
 			if $processes ; then
@@ -1424,7 +1493,7 @@ fi
 # check if curldrop (via Python) is already running and start, if necessary
 breaker=false
 if ! ps aux | grep "/Python.app/Contents/MacOS/Python " | grep "/curldrop " &>/dev/null ; then # not running
-	rm -f "$sharedir/remote"
+	rm -f "$sharedir/remote" "$histloc" 2>/dev/null
 	if $remoteshare ; then
 		echo "$port" > "$sharedir/remote"
 	fi
@@ -1456,8 +1525,6 @@ else
 	_beep &
 	echo "curldrop execution detected"
 fi
-
-rm -f "$histloc" 2>/dev/null
 
 # actual cURL sharing routine
 histlist=""
@@ -1559,7 +1626,11 @@ fi
 # write history
 histlist=$(echo -e "$histlist")
 if [[ $histlist ]] ; then
-	echo "$histlist" > "$histloc" 2>/dev/null
+	if [[ -f "$histloc" ]] ; then
+		echo "$histlist" >> "$histloc" 2>/dev/null
+	else
+		echo "$histlist" > "$histloc" 2>/dev/null
+	fi
 else
 	echo "ERROR: no files shared"
 	_notify "⚠️ Error: no files shared"

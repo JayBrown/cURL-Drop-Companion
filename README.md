@@ -1,12 +1,12 @@
 # cURL Drop Companion
 
-**macOS companion application (Platypus with z-shell script) for `curldrop` to share files on your Mac with other users in the local network or over the internet via direct download links.**
+**macOS companion application (Platypus with z-shell script) for [`curldrop`](https://github.com/kennell/curldrop)to share files on your Mac with other users in the local network or over the internet via direct download links.**
 
-Why? Because **AirDrop** only works between Macs, and not everyone has installed `wormhole`.
+Why? Because **AirDrop** only works between Apple devices, and few people have installed **[`wormhole`](https://github.com/magic-wormhole/magic-wormhole)** or **[SyncThing](https://syncthing.net/)**.
 
-CDC is meant as an ad-hoc sharing solution, i.e. to only launch the service if you quickly want to share files with someone. If you are looking for a permanent solution to keep a sharing server running, you should persist `curldrop` by default at log-in, e.g. with a macOS LaunchAgent.
+CDC is meant as an ad-hoc sharing solution, i.e. to only launch the `curldrop` sharing server when you actually want to share files with someone, and then stop the server again. However, you have the option to persist the `curldrop` server for either local or local & remote sharing using the CDC startup configuration. If you are looking for your own permanent solution to keep the sharing server running, you should persist `curldrop` by default at log-in, e.g. with a macOS LaunchAgent. (See below for full persistence.)
 
-*Note:* the current release is at v1.0.1, but it has not been tested thoroughly, and only on macOS 11.2 (Big Sur).
+*Note:* the current release is at v1.0.3, but it has not been tested thoroughly, and only on macOS 11.2 (Big Sur).
 
 ## Requisites
 * **[`curldrop`](https://github.com/kennell/curldrop)** (install with `python3` using `pip3`)
@@ -27,8 +27,12 @@ CDC is meant as an ad-hoc sharing solution, i.e. to only launch the service if y
 * double-click the workflow to install the Finder Quick Action 
 
 ## Setup
-* allow app to control your Mac
-* configure the network settings
+### TCC
+* allow app to control your Mac (you might be asked several times)
+* allow notifications
+
+### Configuration
+* configure the basic network, sharing & persistence settings
 * optional: configure `sendEmail` settings (enter admin password to store credentials in your keychain)
 
 ## Functionality
@@ -47,15 +51,18 @@ CDC is meant as an ad-hoc sharing solution, i.e. to only launch the service if y
 * print
 
 ### Notes
-* Leave the curldrop server running until the shared files have been downloaded
-* Stop the server (and if necessary close the redirect ports on your router/AP) by launching CDC without input and choosing "Clear Server" from the startup options
+* leave the curldrop server running until the shared files have been downloaded
+* stop the server (and if necessary close the redirect ports on your router/AP) by launching CDC without input and choosing "Clear Server" from the startup options
+* you can persist the `curldrop` server independent of any of CDC's persistence settings by touching a `.persist` dotfile in your `curldrop` sharing directory
+* if you start your `curldrop` server externally, e.g. with a LaunchAgent, you must ensure that CDC's network settings are in accordance
 * a verbose log file is written to `/tmp/local.lcars.cURLDropCompanion.log`
 
 ## To-do
-* support for a `.persist` dotfile in the curldrop sharing directory: CDC would then keep the server running
+———
  
 ## Uninstall
 * delete the main application and the user-defined curldrop sharing folder
-* delete the cURL Drop Companion keychain entry
+* delete the cURL Drop Companion keychain entry containing the `sendEmail` credentials
+* delete `~/Library/Caches/local.lcars.cURLDropCompanion`
 * delete `~/Library/Preferences/local.lcars.cURLDropCompanion.plist`
 * delete `~/Library/Services/cURL Drop Companion.workflow`
