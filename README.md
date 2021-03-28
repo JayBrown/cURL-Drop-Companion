@@ -57,8 +57,11 @@ CDC is meant as an ad-hoc sharing solution, i.e. to only launch the `curldrop` s
 * if you start your `curldrop` server externally, e.g. with a LaunchAgent, you must ensure that CDC's network settings are in accordance
 * a verbose log file is written to `/tmp/local.lcars.cURLDropCompanion.log`
 
+## Known bugs
+* Sometimes the `curldrop` server will simply stop for unknown reasons immediately after CDC ends, so I assume it has something to do with the latter. An attempt to fix this by adding a sleep time of 3 seconds after a successful share was added in v1.0.4.
+
 ## To-do
-———
+—
  
 ## Uninstall
 * delete the main application and the user-defined curldrop sharing folder

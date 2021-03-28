@@ -6,7 +6,7 @@
 # shellcheck disable=SC2162
 
 # cURL Drop Companion (cdc)
-# v1.0.3
+# v1.0.4
 # macOS
 #
 # Copyright (c) 2021 Joss Brown (pseud.)
@@ -33,7 +33,7 @@ export SYSTEM_VERSION_COMPAT=0
 process="cdc"
 uiprocess="cURL Drop Companion"
 procid="local.lcars.cURLDropCompanion"
-version="1.0.3"
+version="1.0.4"
 logloc="/tmp/$procid.log"
 
 # logging
@@ -133,8 +133,15 @@ helpers="$contents/Helpers" # Helpers (in Contents)
 tn_loc="$helpers/cURL Drop Companion Notifier.app"
 approot=$(dirname "$contents") # path to cURL Drop Companion.app
 
+# function: other beep
+_beep () {
+	afplay "$resources/beep.aif" &>/dev/null
+}
+
 # Platypus command to quit GUI app
 _quit-app () {
+	sleep 3
+	_beep &
 	quitapp=$(osascript 2>/dev/null << EOI
 tell application "cURL Drop Companion"
 	set theButton to button returned of (display alert ¬
@@ -155,11 +162,6 @@ _quit-direct () {
 	echo "Quit: direct"
 	printf "QUITAPP\n"
 	exit
-}
-
-# function: other beep
-_beep () {
-	afplay "$resources/beep.aif" &>/dev/null
 }
 
 # function: success sound
@@ -202,17 +204,23 @@ if [[ $prodv_major == 10 ]] && [[ $prodv_minor -ge 16 ]] ; then
 fi
 
 # check runtime/GUI/bundle context
+if [[ $(pgrep -x "cURL Drop Companion" | wc -l) -gt 1 ]] ; then
+	echo "ERROR[02]: an instance of $uiprocess ($process) is already running!"
+	_syseventwarning \
+		"Internal error [02]: processes" \
+		"An instance of $uiprocess ($process) is already running."
+fi
 if [[ $euser == "root" ]] ; then
 	if [[ $accountname != "root" ]] ; then
-		echo "ERROR[02]: please do not execute $uiprocess ($process) as root! Exiting..."
-		_syswarning "Internal error [02]: code execution" "Please do not execute $uiprocess ($process) as root!" "root"
+		echo "ERROR[03]: please do not execute $uiprocess ($process) as root! Exiting..."
+		_syswarning "Internal error [03]: code execution" "Please do not execute $uiprocess ($process) as root!" "root"
 	fi
 fi
 if [[ $resbase != "Resources" ]] ; then
-	echo "ERROR[03]: $uiprocess ($process) is not running from its regular location! Exiting..."
+	echo "ERROR[04]: $uiprocess ($process) is not running from its regular location! Exiting..."
 	_sysbeep &
 	_syseventwarning \
-		"Internal error [03]: not nested in a Resources directory" \
+		"Internal error [04]: not nested in a Resources directory" \
 		"$uiprocess ($process) is not running from its regular location and will exit."
 fi
 unsupported=false
@@ -225,15 +233,15 @@ if [[ $prodv_major -eq 10 ]] && [[ $prodv_minor -le 10 ]] ; then # macOS 10.10 o
 	fi
 fi
 if $unsupported	; then
-	echo "ERROR[04]: $uiprocess ($process) needs at least OS X 10.10.5 (Yosemite)! Exiting..."
+	echo "ERROR[05]: $uiprocess ($process) needs at least OS X 10.10.5 (Yosemite)! Exiting..."
 	_syseventwarning \
-		"Internal error [04]: unsupported OS" \
+		"Internal error [05]: unsupported OS" \
 		"$uiprocess ($process) needs at least OS X 10.10.5 (Yosemite) for Notification Center support."
 fi
 if ! codesign --verify --deep --verbose=1 "$approot" 2>&1 | grep -q "valid on disk$" &>/dev/null ; then
-	echo "ERROR[05]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
+	echo "ERROR[06]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
 		_syseventwarning \
-			"Internal error [05]: bundle signature" \
+			"Internal error [06]: bundle signature" \
 			"$uiprocess ($process) is running from a modified bundle and will exit. Please re-install the app!"
 fi
 crtsdir="/tmp/cdc_crts"
@@ -247,20 +255,20 @@ cskid=$(openssl x509 -in "$crtsdir/codesign0" -inform DER -noout -text -fingerpr
 cd "$WORKDIR" || return
 rm -rf "$crtsdir" 2>/dev/null
 if [[ $cskid != "$skid" ]] ; then
-	echo "ERROR[06]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
+	echo "ERROR[07]: $uiprocess ($process) is running from a modified bundle! Please re-install the app! Exiting..."
 		_syseventwarning \
-			"Internal error [06]: bundle signature" \
+			"Internal error [07]: bundle signature" \
 			"$uiprocess ($process) is running from a modified bundle and will exit. Please re-install the app!"
 fi
 echo "Execution path: $mypath_short"
 if echo "$mypath" | grep -q "/AppTranslocation/" &>/dev/null ; then
-	echo "ERROR[07]: application $uiprocess ($process) has been translocated"
-	_syswarning "Internal error [07]: AppTranslocation" "Please quit $uiprocess ($process), dequarantine the app, and try again!"
+	echo "ERROR[08]: application $uiprocess ($process) has been translocated"
+	_syswarning "Internal error [08]: AppTranslocation" "Please quit $uiprocess ($process), dequarantine the app, and try again!"
 fi
 if ! ps aux | grep "\.app/Contents/MacOS/cURL Drop Companion" | grep -v "grep" &>/dev/null ; then
-	echo "ERROR[08]: $uiprocess ($process) is not running as a GUI process! Exiting..."
+	echo "ERROR[09]: $uiprocess ($process) is not running as a GUI process! Exiting..."
 	_syseventwarning \
-		"Internal error [08]: runtime" \
+		"Internal error [09]: runtime" \
 		"$uiprocess ($process) is not running as a GUI process and will exit."
 fi
 
@@ -298,11 +306,11 @@ do
 done < <(echo "$requisites")
 if $reqerror ; then
 	missinglist=$(echo -e "$missinglist" | grep -v "^$")
-	echo "ERROR[09]: $uiprocess ($process) is missing requisites. Exiting..."
+	echo "ERROR[10]: $uiprocess ($process) is missing requisites. Exiting..."
 	_sysbeep &
 	osascript << EOW
 tell application "cURL Drop Companion"
-	display alert "Internal error [09]: requisites missing" as warning message "Please install the following requisites first:" & return & return & "$missinglist" buttons {"Quit"} default button "Quit" giving up after 180
+	display alert "Internal error [10]: requisites missing" as warning message "Please install the following requisites first:" & return & return & "$missinglist" buttons {"Quit"} default button "Quit" giving up after 180
 end tell
 EOW
 	_quit-direct
